@@ -41,3 +41,13 @@ class UCBAgent(Agent):
 		for t in range(horizon):
 			self._step(t)
 		return self.rewards.sum()
+
+class EpsilonAgent(Agent):
+	def __init__(self, G, A):
+		super(EpsilonAgent, self).__init__(G, A)
+
+	def _step(self, t):
+		raise NotImplementedError
+
+	def run(self, horizon=100):
+		raise NotImplementedError
