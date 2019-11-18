@@ -87,6 +87,26 @@ class KL_UCBAgent(Agent):
 			self.n_pulled[arm] += 1
 			self.rewards[arm] += reward
 
+class TSAgent(Agent):
+	def __init__(self, G, A):
+		super(TSAgent, self).__init__(G, A)
+
+	def _step(self, t):
+		x = np.random.beta(1+self.s, 1+self.f)
+		arm = np.argmax(x)
+		assignments = self.graph.intervention(self.actions[arm])
+		reward = assignments[len(assignments)]
+		self.n_pulled[arm] += 1
+		self.s[arm] += reward; self.f[arm] += 1-reward
+
+	def run(self, horizon=100):
+		self.s = np.zeros(len(self.actions), dtype=int)
+		self.f = np.zeros(len(self.actions), dtype=int)
+		self.n_pulled = np.zeros(len(self.actions), dtype=int)
+		for t in range(horizon):
+			self._step(t)
+		return self.s.sum()
+
 class OC_TSAgent(Agent):
 	def __init__(self, G, A):
 		super(OC_TSAgent, self).__init__(G, A)
@@ -107,7 +127,7 @@ class OC_TSAgent(Agent):
 			z = z + ( 2**i * d[i])
 
 		self.dirch[z,best] += 1
-
+		self.rewards[best] += r
 		if r == 1:
 			self.beta[z,0] += 1
 		else:
@@ -119,6 +139,7 @@ class OC_TSAgent(Agent):
 		self.numPartition = 2 ** (self.numVar)
 		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
 		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
+		self.rewards = np.zeros(self.numAction)
 		for t in range(horizon):
 			self._step(t)
 		return self.rewards.sum()
