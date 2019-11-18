@@ -46,8 +46,47 @@ class EpsilonAgent(Agent):
 	def __init__(self, G, A):
 		super(EpsilonAgent, self).__init__(G, A)
 
-	def _step(self, t):
+		# This stores the intervention and rewards in a dictionary format:
+		# self.run_history["000010"] = 3 indicates that values
+		# [x1, x2, x3, x4, x5] = [0, 0, 0, 0, 1] led to a reward of 0 (the 
+		# last character in the string) in exactly 3 runs
+		self.run_history = dict()
+
+	# Return a list of assignments to variables in graph given an encoding
+	# of the assignments in a string format
+	def _getAssignmentFromString(self, sx):
+		return list(map(int, sx))
+
+	# Return an encoding of the assignments in a string format given a 
+	# list of assignments to variables in graph
+	def _getStringFromAssignment(self, sx):
+		return "".join(map(str, sx))
+
+	def _step(self, time_step, epsilon):
+		# Explore different actions
+		if random.random() < epsilon:
+			i = int(random.random * len(self.actions))
+			assignment = self.graph.intervention(actions[i])
+			
+
+		# Exploit actions
 		raise NotImplementedError
 
 	def run(self, horizon=100):
-		raise NotImplementedError
+
+		def positiveReward(sx):
+			# assignments = _getAssignmentFromString(sx)
+			# return assignments[-1] == 1
+			return sx[-1] == "1"
+
+		for t in range(horizon):
+			self._step(t, epsilon=0.2)
+
+		# Compile all runs which resulted in a positive record
+		reward_counts = [
+			self.run_history[assn]
+			for assn in self.run_history.keys()
+			if positiveReward(assn)
+			]
+		
+		return sum(reward_counts)
