@@ -60,7 +60,19 @@ class EpsilonAgent(Agent):
 	# Return an encoding of the assignments in a string format given a 
 	# list of assignments to variables in graph
 	def _getStringFromAssignment(self, sx):
-		return "".join(map(str, sx))
+		# If the input is a dictionary (i.e. an assignment dictionary)
+		if isinstance(sx, dict):
+			string = "0" * len(self.graph.variables)
+			for key in assignment.keys():
+				string[int(key)] = assignment[key]
+
+			return string
+
+		# If input is a list of assignments
+		if isinstance(sx, list):
+			return "".join(map(str, sx))
+
+		raise NotImplementedError
 
 	def _step(self, time_step, epsilon):
 		# Explore different actions
@@ -68,9 +80,17 @@ class EpsilonAgent(Agent):
 			i = int(random.random * len(self.actions))
 			assignment = self.graph.intervention(actions[i])
 			
+			dict_index = self._getStringFromAssignment(assignment)
+			
+			# Update run history table to capture result of sampling
+			if dict_index not in self.run_history.keys():
+				self.run_history[dict_index] = 1
+			else:
+				self.run_history[dict_index] += 1
 
-		# Exploit actions
-		raise NotImplementedError
+		# Exploit using run history table
+		else:
+			raise NotImplementedError
 
 	def run(self, horizon=100):
 
