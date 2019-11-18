@@ -90,10 +90,6 @@ class KL_UCBAgent(Agent):
 class OC_TSAgent(Agent):
 	def __init__(self, G, A):
 		super(OCTSAgent, self).__init__(G, A)
-		self.numAction = len(G.variables) - 1
-		self.numPartition = 2 ** (self.numAction)
-		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
-		self.dirch = np.zeros((self.numPartition,2 * self.numAction), dtype=int) + 1
 
 	def _step(self):
 		succesChance = np.zeros(2 * self.numAction)
@@ -105,12 +101,13 @@ class OC_TSAgent(Agent):
 			succesChance[a] = np.asscalar(sampl @ partionProb)
 		
 		best = np.argmax(succesChance)
-		v = best // 2
-		val = best %  2
-		d = dict()
-		d[v] = val
+		# v = best // 2
+		# val = best %  2
+		# d = dict()
+		# d[v] = val
+		d = self.actions[best]
 
-		d = G.intervention(d) 
+		d = self.graph.intervention(d) 
 
 		r = d[self.numAction]
 		z = 0
@@ -123,3 +120,12 @@ class OC_TSAgent(Agent):
 			self.beta[z,0] += 1
 		else:
 			self.beta[z,1] += 1
+
+	def run(self, horizon=100):
+		self.numAction = len(self.graph.variables) - 1
+		self.numPartition = 2 ** (self.numAction)
+		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
+		self.dirch = np.zeros((self.numPartition,2 * self.numAction), dtype=int) + 1
+		for t in range(horizon):
+			self._step(t)
+		return self.rewards.sum()
