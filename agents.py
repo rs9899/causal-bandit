@@ -89,29 +89,21 @@ class KL_UCBAgent(Agent):
 
 class OC_TSAgent(Agent):
 	def __init__(self, G, A):
-		super(OCTSAgent, self).__init__(G, A)
+		super(OC_TSAgent, self).__init__(G, A)
 
 	def _step(self):
-		succesChance = np.zeros(2 * self.numAction)
-		for a in range(2 * self.numAction):
-			# v   = a // 2
-			# val = a %  2
+		succesChance = np.zeros( self.numAction )
+		for a in range( self.numAction ):
 			partionProb = np.random.dirichlet(self.dirch[:,a]).reshape((self.numPartition,1))
 			sampl = np.random.beta(self.beta[:,0],self.beta[:,1]).reshape((1 , self.numPartition))
 			succesChance[a] = np.asscalar(sampl @ partionProb)
 		
 		best = np.argmax(succesChance)
-		# v = best // 2
-		# val = best %  2
-		# d = dict()
-		# d[v] = val
 		d = self.actions[best]
-
 		d = self.graph.intervention(d) 
-
 		r = d[self.numAction]
 		z = 0
-		for i in range(self.numAction):
+		for i in range(self.numVar):
 			z = z + ( 2**i * d[i])
 
 		self.dirch[z,best] += 1
@@ -122,10 +114,11 @@ class OC_TSAgent(Agent):
 			self.beta[z,1] += 1
 
 	def run(self, horizon=100):
-		self.numAction = len(self.graph.variables) - 1
-		self.numPartition = 2 ** (self.numAction)
+		self.numAction = len(self.actions)
+		self.numVar = len(self.graph.variables) - 1
+		self.numPartition = 2 ** (self.numVar)
 		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
-		self.dirch = np.zeros((self.numPartition,2 * self.numAction), dtype=int) + 1
+		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
 		for t in range(horizon):
 			self._step(t)
 		return self.rewards.sum()
