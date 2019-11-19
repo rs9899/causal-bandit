@@ -143,3 +143,56 @@ class OC_TSAgent(Agent):
 		for t in range(horizon):
 			self._step(t)
 		return self.rewards.sum()
+
+
+
+class SampleGraph:
+	def __init__(self,G):
+		random.seed(4)
+		self.variables = np.arange(len(G.parents))
+		self.parents = G.parents
+		self.ZeroCount = {}
+		self.OneCount = {}
+		for i in self.variables:
+			self.ZeroCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
+			self.OneCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
+
+	def update(self,assignment,varIntervened = []):
+		for i in self.variables:
+			if i not in varIntervened:
+				idx = 0
+				j = 0
+				for p in self.parents[i]:
+					idx = idx + (assignment[p] * (2**j) )
+					j = j + 1
+				if assignment[i] == 0:
+					ZeroCount[idx] += 1
+				else:
+					OneCount[idx] += 1
+
+	def sampleIntervention(self, assignment = []):
+		for v in self.variables:
+			if v not in assignment:
+				idx = 0
+				j = 0
+				for p in self.parents[i]:
+					idx = idx + (assignment[p] * (2**j) )
+					j = j + 1
+				p = ZeroCount[idx] * 1.0 / (OneCount[idx] + ZeroCount[idx])
+				if random.random() < x[0]:
+					assignment[v] = 0
+				else:
+					assignment[v] = 1
+				
+
+
+
+class E_graphAgent(Agent):
+	def __init__(self,G,A):
+		super(E_graphAgent, self).__init__(G, A)
+
+	def _step(self):
+		return
+
+	def run(self,horizon=100):
+		self.myGraph = SampleGraph(self.graph)
