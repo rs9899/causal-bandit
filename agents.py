@@ -52,6 +52,20 @@ class EpsilonAgent(Agent):
 		# last character in the string) in exactly 3 runs
 		self.run_history = dict()
 
+		# This stores P(reward = 1 | Action = a), along with the count of 
+		# such runs. 
+		self.count_successful_action = [0] * len(self.actions)
+
+		# Total number of actions which led to a reward of 1
+		self.total_successful_actions = 0
+
+		# This stores P(Action = a), along with the count of such runs. 
+		self.count_action = [0] * len(self.actions)
+
+		# Total number of actions takens (i.e. number of runs)
+		self.total_actions = 0
+
+
 	# Return a list of assignments to variables in graph given an encoding
 	# of the assignments in a string format
 	def _getAssignmentFromString(self, sx):
@@ -61,7 +75,10 @@ class EpsilonAgent(Agent):
 	# list of assignments to variables in graph
 	def _getStringFromAssignment(self, sx):
 		# If the input is a dictionary (i.e. an assignment dictionary)
-		if isinstance(sx, dict):
+		#
+		# Can be sped up using the invariant mapping present in 
+		# assignment.values()
+		if type(sx) is dict:
 			string = "0" * len(self.graph.variables)
 			for key in assignment.keys():
 				string[int(key)] = assignment[key]
@@ -69,11 +86,25 @@ class EpsilonAgent(Agent):
 			return string
 
 		# If input is a list of assignments
-		if isinstance(sx, list):
+		if type(sx) is list:
 			return "".join(map(str, sx))
 
 		raise NotImplementedError
 
+	# Update self.prob_successful_action and self.prob_action given the
+	# sample 'assignment'
+	def _updateProbabilities(self, assignment):
+		reward = assignment[len(actions) - 1]
+
+		for key in assignment.keys():
+			self.count_action[key] += 1
+			self.total_actions += 1
+
+			if reward == 1:
+				self.count_successful_action[key] += 1
+				self.total_successful_actions += 1
+
+	# Run a single iteration
 	def _step(self, time_step, epsilon):
 		# Explore different actions
 		if random.random() < epsilon:
@@ -81,6 +112,7 @@ class EpsilonAgent(Agent):
 			assignment = self.graph.intervention(actions[i])
 			
 			dict_index = self._getStringFromAssignment(assignment)
+			self.update_probabilities(assignment)
 			
 			# Update run history table to capture result of sampling
 			if dict_index not in self.run_history.keys():
@@ -90,8 +122,10 @@ class EpsilonAgent(Agent):
 
 		# Exploit using run history table
 		else:
+			expectations = []
 			raise NotImplementedError
 
+	# Run the algorithm for given horizons
 	def run(self, horizon=100):
 
 		def positiveReward(sx):
