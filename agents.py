@@ -12,12 +12,15 @@ class Agent(object):
 	def _step(self, t=0):
 		raise NotImplementedError
 
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size=5):
 		self.rewards = np.zeros(len(A))
 		self.n_pulled = np.zeros(len(A))
+		ans = []
 		for t in range(horizon):
 			self._step(t)
-		return self.rewards.sum()
+			if t%step_size==step_size-1:
+				ans.append(self.rewards.sum())
+		return ans
 
 class UCBAgent(Agent):
 	def __init__(self, G, A):
@@ -99,13 +102,16 @@ class TSAgent(Agent):
 		self.n_pulled[arm] += 1
 		self.s[arm] += reward; self.f[arm] += 1-reward
 
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size=5):
 		self.s = np.zeros(len(self.actions), dtype=int)
 		self.f = np.zeros(len(self.actions), dtype=int)
 		self.n_pulled = np.zeros(len(self.actions), dtype=int)
+		ans = []
 		for t in range(horizon):
 			self._step(t)
-		return self.s.sum()
+			if t%step_size==step_size-1:
+				ans.append(self.s.sum())
+		return ans
 
 class OC_TSAgent(Agent):
 	def __init__(self, G, A):
@@ -133,16 +139,20 @@ class OC_TSAgent(Agent):
 		else:
 			self.beta[z,1] += 1
 
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size=5):
 		self.numAction = len(self.actions)
 		self.numVar = len(self.graph.variables) - 1
 		self.numPartition = 2 ** (self.numVar)
 		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
 		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
 		self.rewards = np.zeros(self.numAction)
+		ans = []
 		for t in range(horizon):
 			self._step(t)
-		return self.rewards.sum()
+			if t%step_size==step_size-1:
+				ans.append(self.rewards.sum())
+		return ans
+
 
 class EpsilonAgent(Agent):
 	def __init__(self, G, A):
