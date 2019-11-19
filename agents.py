@@ -276,7 +276,7 @@ class SampleGraph:
 				else:
 					OneCount[idx] += 1
 
-	def sampleIntervention(self, assignment = []):
+	def binaryIntervention(self, assignment = {}):
 		for v in self.variables:
 			if v not in assignment:
 				idx = 0
@@ -289,6 +289,7 @@ class SampleGraph:
 					assignment[v] = 0
 				else:
 					assignment[v] = 1
+		return assignment[len(self.variables)-1]
 				
 
 
