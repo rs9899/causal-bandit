@@ -12,12 +12,15 @@ class Agent(object):
 	def _step(self, t=0):
 		raise NotImplementedError
 
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size=5):
 		self.rewards = np.zeros(len(A))
 		self.n_pulled = np.zeros(len(A))
+		ans = []
 		for t in range(horizon):
 			self._step(t)
-		return self.rewards.sum()
+			if t%step_size==step_size-1:
+				ans.append(self.rewards.sum())
+		return ans
 
 class UCBAgent(Agent):
 	def __init__(self, G, A):
@@ -99,13 +102,16 @@ class TSAgent(Agent):
 		self.n_pulled[arm] += 1
 		self.s[arm] += reward; self.f[arm] += 1-reward
 
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size=5):
 		self.s = np.zeros(len(self.actions), dtype=int)
 		self.f = np.zeros(len(self.actions), dtype=int)
 		self.n_pulled = np.zeros(len(self.actions), dtype=int)
+		ans = []
 		for t in range(horizon):
 			self._step(t)
-		return self.s.sum()
+			if t%step_size==step_size-1:
+				ans.append(self.s.sum())
+		return ans
 
 class OC_TSAgent(Agent):
 	def __init__(self, G, A):
@@ -133,16 +139,20 @@ class OC_TSAgent(Agent):
 		else:
 			self.beta[z,1] += 1
 
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size=5):
 		self.numAction = len(self.actions)
 		self.numVar = len(self.graph.variables) - 1
 		self.numPartition = 2 ** (self.numVar)
 		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
 		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
 		self.rewards = np.zeros(self.numAction)
+		ans = []
 		for t in range(horizon):
 			self._step(t)
-		return self.rewards.sum()
+			if t%step_size==step_size-1:
+				ans.append(self.rewards.sum())
+		return ans
+
 
 class EpsilonAgent(Agent):
 	def __init__(self, G, A):
@@ -278,3 +288,61 @@ class EpsilonAgent(Agent):
 			]
 		
 		return sum(reward_counts)
+
+
+
+
+
+
+class SampleGraph:
+	def __init__(self,G):
+		random.seed(4)
+		self.variables = np.arange(len(G.parents))
+		self.parents = G.parents
+		self.ZeroCount = {}
+		self.OneCount = {}
+		for i in self.variables:
+			self.ZeroCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
+			self.OneCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
+
+	def update(self,assignment,varIntervened = []):
+		for i in self.variables:
+			if i not in varIntervened:
+				idx = 0
+				j = 0
+				for p in self.parents[i]:
+					idx = idx + (assignment[p] * (2**j) )
+					j = j + 1
+				if assignment[i] == 0:
+					ZeroCount[idx] += 1
+				else:
+					OneCount[idx] += 1
+
+	def binaryIntervention(self, assignment = {}):
+		for v in self.variables:
+			if v not in assignment:
+				idx = 0
+				j = 0
+				for p in self.parents[i]:
+					idx = idx + (assignment[p] * (2**j) )
+					j = j + 1
+				p = ZeroCount[idx] * 1.0 / (OneCount[idx] + ZeroCount[idx])
+				if random.random() < x[0]:
+					assignment[v] = 0
+				else:
+					assignment[v] = 1
+		return assignment[len(self.variables)-1]
+				
+
+
+
+class E_graphAgent(Agent):
+	def __init__(self,G,A):
+		super(E_graphAgent, self).__init__(G, A)
+
+	def _step(self):
+		return
+
+	def run(self,horizon=100):
+		self.myGraph = SampleGraph(self.graph)
+
