@@ -305,12 +305,16 @@ class SampleGraph:
 
 
 class E_graphAgent(Agent):
-	def __init__(self,G,A):
+	def __init__(self,G,A,epsilon = 0.1,step = 10):
 		super(E_graphAgent, self).__init__(G, A)
+		self.epsilon = epsilon
+		self.step = step
 
 	def _step(self):
 		return
 
 	def run(self,horizon=100):
 		self.myGraph = SampleGraph(self.graph)
+		for 
+		
 
