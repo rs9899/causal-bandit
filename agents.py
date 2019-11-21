@@ -164,17 +164,9 @@ class EpsilonAgent(Agent):
 		# last character in the string) in exactly 3 runs
 		self.run_history = dict()
 
-		# This stores P(reward = 1 | Action = a), along with the count of 
-		# such runs. 
-		self.count_successful_action = [0] * len(self.actions)
-
-		# Total number of actions which led to a reward of 1
+		# Total number of actions which led to a reward of 1 and total 
+		# number of actions
 		self.total_successful_actions = 0
-
-		# This stores P(Action = a), along with the count of such runs. 
-		self.count_action = [0] * len(self.actions)
-
-		# Total number of actions takens (i.e. number of runs)
 		self.total_actions = 0
 
 
@@ -216,6 +208,13 @@ class EpsilonAgent(Agent):
 				self.count_successful_action[key] += 1
 				self.total_successful_actions += 1
 
+		dict_index = self._getStringFromAssignment(assignment)
+
+		if dict_index not in self.run_history.keys():
+			self.run_history[dict_index] = 1
+		else:
+			self.run_history[dict_index] += 1
+
 	# Run a single iteration
 	def _step(self, time_step, epsilon):
 		# Explore different actions
@@ -223,18 +222,51 @@ class EpsilonAgent(Agent):
 			i = int(random.random * len(self.actions))
 			assignment = self.graph.intervention(actions[i])
 			
-			dict_index = self._getStringFromAssignment(assignment)
 			self.update_probabilities(assignment)
-			
-			# Update run history table to capture result of sampling
-			if dict_index not in self.run_history.keys():
-				self.run_history[dict_index] = 1
-			else:
-				self.run_history[dict_index] += 1
 
 		# Exploit using run history table
 		else:
-			expectations = []
+			expectations = [0] * len(actions)
+
+			for x in actions:
+				var = list(actions.keys())[0]
+				action = x[var]
+
+				assignment_count = dict()
+				reward_count = dict()
+				consistent_assn_count = dict()
+
+				for key in run_history.keys():
+					parent_assignment = [
+						i for i in key 
+						if i in self.graph.parents[var]
+					]
+
+					if parent_assignment in assignment_count.keys():
+						assignment_count[parent_assignment] += 1
+					else:
+						assignment_count[parent_assignment] = 1
+						reward_count[parent_assignment] = 0
+						consistent_assn_count[parent_assignment] = 0
+					
+					if key[var] == action:
+						if key[-1] == 1:
+							reward_count[parent_assignment] += 1
+						consistent_assn_count[parent_assignment] += 1
+						
+				for key in assignment_count.keys():
+					expectations[2*var+action] += 
+						(reward_count[key] / consistent_assn_count[key]) *
+						(assignment_count[key] * self.total_actions)
+
+			action = expectations.index(max(action))
+			
+			var = action // 2
+			action = action % 2
+
+			assignment = self.graph.intervention({var: action})
+			self.update_probabilities(assignment)
+
 			raise NotImplementedError
 
 	# Run the algorithm for given horizons
