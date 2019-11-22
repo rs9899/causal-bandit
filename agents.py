@@ -3,11 +3,15 @@ Class descriptions for all agents.
 """
 
 import numpy as np
+import random
+
 
 class Agent(object):
 	def __init__(self, G, A):
 		self.graph = G
 		self.actions = A
+		self.numVar = len(self.graph.variables) - 1
+		self.rewardVariable = self.numVar
 
 	def _step(self, t=0):
 		raise NotImplementedError
@@ -148,7 +152,7 @@ class OC_TSAgent(Agent):
 
 	def run(self, horizon=100, step_size=5):
 		self.numAction = len(self.actions)
-		self.numVar = len(self.graph.variables) - 1
+		
 		self.numPartition = 2 ** (self.numVar)
 		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
 		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
@@ -185,35 +189,34 @@ class EpsilonAgent(Agent):
 
 	# Return an encoding of the assignments in a string format given a 
 	# list of assignments to variables in graph
-	def _getStringFromAssignment(self, sx):
+	def _getStringFromAssignment(self, assignment):
 		# If the input is a dictionary (i.e. an assignment dictionary)
 		#
 		# Can be sped up using the invariant mapping present in 
 		# assignment.values()
-		if type(sx) is dict:
-			string = "0" * len(self.graph.variables)
+		if type(assignment) is dict:
+			string = [0] * len(self.graph.variables)
 			for key in assignment.keys():
 				string[int(key)] = assignment[key]
 
-			return string
+			return "".join(map(str, string))
 
 		# If input is a list of assignments
-		if type(sx) is list:
-			return "".join(map(str, sx))
+		if type(assignment) is list:
+			return "".join(map(str, assignment))
 
 		raise NotImplementedError
 
 	# Update self.prob_successful_action and self.prob_action given the
 	# sample 'assignment'
 	def _updateProbabilities(self, assignment):
-		reward = assignment[len(actions) - 1]
+		actions = self.actions
+		reward = assignment[self.rewardVariable]
 
 		for key in assignment.keys():
-			self.count_action[key] += 1
 			self.total_actions += 1
 
 			if reward == 1:
-				self.count_successful_action[key] += 1
 				self.total_successful_actions += 1
 
 		dict_index = self._getStringFromAssignment(assignment)
@@ -226,30 +229,33 @@ class EpsilonAgent(Agent):
 	# Run a single iteration
 	def _step(self, time_step, epsilon):
 		# Explore different actions
+		actions = self.actions
 		if random.random() < epsilon:
-			i = int(random.random * len(self.actions))
+			i = int(random.random() * len(self.actions))
 			assignment = self.graph.intervention(actions[i])
 			
-			self.update_probabilities(assignment)
+			self._updateProbabilities(assignment)
 
 		# Exploit using run history table
 		else:
+			
 			expectations = [0] * len(actions)
 
 			for x in actions:
-				var = list(actions.keys())[0]
+				var = list(x.keys())[0]
 				action = x[var]
 
 				assignment_count = dict()
 				reward_count = dict()
 				consistent_assn_count = dict()
-
+				run_history = self.run_history
 				for key in run_history.keys():
 					parent_assignment = [
 						i for i in key 
 						if i in self.graph.parents[var]
 					]
-
+					parent_assignment = "".join(map(str, parent_assignment))
+					
 					if parent_assignment in assignment_count.keys():
 						assignment_count[parent_assignment] += 1
 					else:
@@ -263,41 +269,36 @@ class EpsilonAgent(Agent):
 						consistent_assn_count[parent_assignment] += 1
 						
 				for key in assignment_count.keys():
-					expectations[2*var+action] += 
-						(reward_count[key] / consistent_assn_count[key]) *
-						(assignment_count[key] * self.total_actions)
+					if consistent_assn_count[key] != 0:
+						expectations[2*var+action] += (reward_count[key] / consistent_assn_count[key]) * (assignment_count[key] * self.total_actions)
 
-			action = expectations.index(max(action))
+			action = expectations.index(max(expectations))
 			
 			var = action // 2
 			action = action % 2
 
 			assignment = self.graph.intervention({var: action})
-			self.update_probabilities(assignment)
-
-			raise NotImplementedError
+			self._updateProbabilities(assignment)
 
 	# Run the algorithm for given horizons
-	def run(self, horizon=100):
+	def run(self, horizon=100, step_size = 5):
 
 		def positiveReward(sx):
 			# assignments = _getAssignmentFromString(sx)
 			# return assignments[-1] == 1
 			return sx[-1] == "1"
 
+		ans = []
 		for t in range(horizon):
 			self._step(t, epsilon=0.2)
-
-		# Compile all runs which resulted in a positive record
-		reward_counts = [
-			self.run_history[assn]
-			for assn in self.run_history.keys()
-			if positiveReward(assn)
-			]
-		
-		return sum(reward_counts)
-
-
+			if t % step_size == step_size - 1:
+				reward_counts = [
+					self.run_history[assn]
+					for assn in self.run_history.keys()
+					if positiveReward(assn)
+					]
+				ans.append(sum(reward_counts))
+		return ans
 
 
 
