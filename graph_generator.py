@@ -1,12 +1,14 @@
+"""
+Class for generating random graphs of varying topology.
+"""
+
 import numpy as np
-from graph_utilities import graph
+from graph_utilities import Graph
 
-class graph_samples:
-	def __init__(self, num_variables):
-		self.num_variables = num_variables
-		np.random.seed(7)
+class GraphSampler(object):
 
-	def get_distribution(self, variables, parents):
+	@staticmethod
+	def get_distribution(variables, parents):
 		distribution = {}
 		for i in variables:
 			if len(parents[i])==0:
@@ -17,29 +19,42 @@ class graph_samples:
 			distribution[i] = np.reshape(distribution[i], tuple(l))
 		return distribution
 
-	def linear_graph(self):
-		variables = np.arange(self.num_variables)
-		parents = [[] for _ in range(self.num_variables)]
-		for i in range(1,self.num_variables):
+	@staticmethod
+	def linear_graph(num_variables):
+		variables = np.arange(num_variables)
+		parents = [[] for _ in range(num_variables)]
+		for i in range(1, num_variables):
 			parents[i].append(i-1)
 		parents = np.asarray(parents)
-		return graph(parents, self.get_distribution(variables, parents))
+		return Graph(parents, GraphSampler.get_distribution(variables, parents))
 
-	def disjoint_graph(self):
-		variables = np.arange(self.num_variables)
-		parents = [[] for _ in range(self.num_variables)]
-		for i in range(self.num_variables-1):
-			parents[self.num_variables-1].append(i)
+	@staticmethod
+	def disjoint_graph(num_variables):
+		variables = np.arange(num_variables)
+		parents = [[] for _ in range(num_variables)]
+		for i in range(num_variables-1):
+			parents[num_variables-1].append(i)
 		parents = np.asarray(parents)
-		return graph(parents, self.get_distribution(variables, parents))
+		return Graph(parents, GraphSampler.get_distribution(variables, parents))
 
-	def random_graph(self):
-		variables = np.arange(self.num_variables)
-		parents = [[] for _ in range(self.num_variables)]
+	@staticmethod
+	def random_graph(num_variables):
+		variables = np.arange(num_variables)
+		parents = [[] for _ in range(num_variables)]
 		for i in range(1,num_variables):
 			x = np.random.randint(2, size=i)
 			for j in range(i):
 				if x[j]==1:
 					parents[i].append(j)
 		parents = np.asarray(parents)
-		return graph(parents, self.get_distribution(variables, parents))
+		return Graph(parents, GraphSampler.get_distribution(variables, parents))
+
+	@staticmethod
+	def to_file(graph):
+		# TODO : Gaurav
+		pass
+
+	@staticmethod
+	def from_file(filepath):
+		# TODO : Gaurav
+		pass

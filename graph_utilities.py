@@ -1,14 +1,19 @@
+"""
+Bayesian graph with topologically sorted variables.
+"""
+
 import numpy as np 
 import random
 
+def set_random_seed(seed):
+	random.seed(seed)
+	np.random.seed(seed)
 
-# Bayesian Graph with variable names topologically sorted
-class graph:
+class Graph(object):
 	def __init__(self, parents, distribution):
 		self.variables = np.arange(len(parents))
 		self.parents = parents
 		self.distribution = distribution
-		random.seed(40)
 
 	def intervention(self, assignment):
 		returnDict = {}

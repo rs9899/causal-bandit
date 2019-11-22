@@ -316,8 +316,6 @@ class SampleGraph:
 				returnAssign[v] = assignment[v]
 
 		return returnAssign[ len(self.variables) - 1 ]
-				
-
 
 class E_graphAgent(Agent):
 	def __init__(self,G,A,epsilon = 0.1,step = 10):
