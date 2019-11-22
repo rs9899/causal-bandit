@@ -28,9 +28,9 @@ AGENTS = {
 }
 
 GRAPHS = [
-	'graphs/graph-1.txt',
-	# 'graphs/graph-2.txt',
-	# 'graphs/graph-3.txt',
+	'sample_graphs/graph_disjoint.txt',
+	'sample_graphs/graph_linear.txt',
+	'sample_graphs/graph_random.txt',
 	# 'graphs/graph-4.txt'
 ]
 
