@@ -34,7 +34,9 @@ def prob_given_parent(x, z):
 	return (0.5, 0.5)
 
 def P(X, vals, A):
-	print(X, vals, A)
+	print("enterP" , X , vals, A)
+	if len(X) == 0:
+		return 1
 	var = X[0]
 	if var in A:
 		if vals[var] == A[var]:
@@ -43,16 +45,25 @@ def P(X, vals, A):
 			return 0.0
 	else:
 		pa_var = parents(var)
+		if len(pa_var) == 0:
+			return 0.5 * P(X[1:], vals, A) 
+
 		new_var = set(pa_var).union(set(X[1:])) 
 		# pa_assign returns a list of all {parent: value} assignments
 		# so z is a dict containing parent:value items
+		print("HERE")
+		print(pa_assign(var) , var, vals)
 		valid_assign = [z for z in pa_assign(var) if all([z[i]==v for i,v in vals.items() if i in z])]
+		print(valid_assign)
 		prob = 0.0
+
+
 		for z in valid_assign:
 			new_vals = z
 			new_vals.update(vals)
-			prob += prob_given_parent(var, z)[vals[var]] * P(list(new_var), new_vals, A)
+			prob += (prob_given_parent(var, z)[vals[var]] * P(list(new_var), new_vals, A) )
 		return prob
 
 if __name__ == '__main__':
-	P([2,3], {2:1,3:1}, {4:0})
+	z = P([2,3], {2:1,3:1}, {4:0})
+	print(z)

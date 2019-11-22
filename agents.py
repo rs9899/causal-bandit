@@ -278,6 +278,8 @@ class SampleGraph:
 	def __init__(self,G):
 		random.seed(4)
 		self.variables = np.arange(len(G.parents))
+		self.numVar = len(self.variables) - 1
+		self.rewardVariable = self.numVar
 		self.parents = G.parents
 		self.ZeroCount = {}
 		self.OneCount = {}
@@ -316,18 +318,79 @@ class SampleGraph:
 				returnAssign[v] = assignment[v]
 
 		return returnAssign[ len(self.variables) - 1 ]
+
+
+	def allPossibleAssign(self,lis):
+		if len(lis) == 0:
+			return [{}]
+		Z = self.allPossibleAssign(lis[1:])
+		l = []
+		for z in Z:
+			v = {lis[0] : 0}
+			u = {lis[0] : 1}
+			v.update(z)
+			u.update(z)
+			l.append(v)
+			l.append(u)
+		return l
+
+	def P_helper(self,X,vals,A):
+		if len(X) == 0:
+			return 1.0
+		var = X[0]
+		if var in A:
+			if vals[var] == A[var]:
+				return self.P_helper(X[1:], vals, A)
+			else:
+				return 0.0
+		pa_var = self.parents[var]
+		if len(pa_var) == 0:
+			p = self.ZeroCount[var][0] * 1.0 / (self.OneCount[var][0] + self.ZeroCount[var][0])
+			if vals[var] == 1:
+				p = 1 - p
+			return p * self.P_helper(X[1:], vals, A)
+		
+		new_var = set(pa_var).union(set(X[1:]))
+		pa_assign = self.allPossibleAssign(pa_var)
+		valid_assign = [z for z in pa_assign if all([z[i] == v for i,v in vals.items() if i in z])]
+
+		prob = 0.0
+		for z in valid_assign:
+			prob_given_parent  = 0 
+			idx = 0
+			j = 0
+			for par in self.parents[var]:
+				idx = idx + (z[par] * (2**j) )
+				j = j + 1
+			prob_given_parent = self.ZeroCount[var][idx] * 1.0 / (self.OneCount[var][idx] + self.ZeroCount[var][idx])
+			if vals[var] == 1:
+				prob_given_parent = 1 - prob_given_parent
+
+			new_vals = z
+			new_vals.update(vals)
+
+			prob += (prob_given_parent * self.P_helper(list(new_var), new_vals, A) )
+
+		return prob
+
+
+	def probabilisticIntervention(self, assignment = {}):
+		return self.P_helper([self.rewardVariable] , {self.rewardVariable : 1} , assignment	)
+
+
 				
 
 
 class E_graphAgent(Agent):
-	def __init__(self,G,A,epsilon = 0.1,step = 10):
+	def __init__(self,G,A,epsilon = 0.1,step = 100 , switch = 0):
 		super(E_graphAgent, self).__init__(G, A)
 		self.epsilon = epsilon
 		self.step = step
+		self.switch = switch
 
 	def _step(self,time_step,epsilon):
 		# WRITE CODE FOR EPSILON DECAY >>> LESS EXPLORATION
-
+		epsilon = epsilon / (1 +  (time_step / self.step))
 		actions = self.actions
 		if random.random() < epsilon:
 			bestAction = int(random.random() * len(actions))
@@ -336,10 +399,14 @@ class E_graphAgent(Agent):
 			bestAction = 0
 			rewardArray = []
 			for action in actions:
-				reward = 0
-				for i in range(int(1e2)):
-					reward += self.myGraph.binaryIntervention(action)
-				rewardArray.append(reward)
+				if self.switch == 1:
+					reward = 0
+					for i in range(int(1e2)):
+						reward += self.myGraph.binaryIntervention(action)
+					rewardArray.append(reward)
+				else :
+					rewardArray.append(self.myGraph.probabilisticIntervention(action))
+
 			bestAction = np.argmax(np.asarray(rewardArray))
 			assignment = self.graph.intervention(actions[bestAction])
 		
