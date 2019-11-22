@@ -8,19 +8,19 @@ class graph:
 		self.variables = np.arange(len(parents))
 		self.parents = parents
 		self.distribution = distribution
-		random.seed(4)
+		random.seed(40)
 
 	def intervention(self, assignment):
-		ret = {}
+		returnDict = {}
 		for v in self.variables:
 			if v in assignment:
-				ret[v] = assignment[v]
+				returnDict[v] = assignment[v]
 				continue
 			x = self.distribution[v]
 			for p in self.parents[v]:
-				x = x[assignment[p]]
-			if random.random() < x[0]:
-				ret[v] = 0
+				x = x[returnDict[p]]
+			if random.random() < x:
+				returnDict[v] = 1
 			else:
-				ret[v] = 1
-		return ret
+				returnDict[v] = 0
+		return returnDict
