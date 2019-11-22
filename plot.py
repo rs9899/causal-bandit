@@ -21,8 +21,8 @@ STEP_SIZE      = 500
 AGENTS = {
 	'UCB'             : agents.UCBAgent,
 	'KL-UCB'          : agents.KL_UCBAgent,
-	'TS'              : agents.TSAgent,
-	'OC-TS'           : agents.OC_TSAgent,
+	# 'TS'              : agents.TSAgent,
+	# 'OC-TS'           : agents.OC_TSAgent,
 	# '\\epsilon-greedy': agents.E_graphAgent
 }
 
@@ -54,11 +54,12 @@ for graph_file in GRAPHS:
 	plt.figure()
 	plt.title(graph_file)
 	plt.xlabel('Horizon')
-	plt.ylabel('E[Y=1 | do(X=a)]')
+	plt.ylabel('$\\sum_{t=1}^T r_t\\ /\\ T$')
 	idx2name = [x for x in AGENTS.keys()]
 	steps = np.arange(STEP_SIZE-1, HORIZON, STEP_SIZE)
 	for i in range(means.shape[0]):
 		plt.plot(steps, means[i, :]/steps, label=idx2name[i])
 		plt.fill_between(steps, (means[i,:]-stddevs[i,:])/steps, (means[i,:]+stddevs[i,:])/steps, alpha=0.2)
+	plt.axhline(y=0.5, color='r', linestyle='-')
 	plt.legend()
 	plt.show()
