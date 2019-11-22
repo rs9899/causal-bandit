@@ -36,26 +36,31 @@ for i in range(n-1):
 # print(ucb_rewards)
 # plt.plot(x, [ucb_rewards[i]/x[i] for i in range(len(x))])
 
-# ucb_agent = TSAgent(g, a)
-# ucb_rewards = ucb_agent.run(30000,1000)
-# x = []
-# for i in range(30):
-# 	x.append(1000*(i+1))
-
-# print(ucb_rewards)
-# plt.plot(x, [ucb_rewards[i]/x[i] for i in range(len(x))])
-
-# ucb_agent = OC_TSAgent(g, a)
-# ucb_rewards = ucb_agent.run(30000,1000)
-# x = []
-# for i in range(30):
-# 	x.append(1000*(i+1))
-
-ucb_agent = E_graphAgent(g, a)
-ucb_rewards = ucb_agent.run(1000,10)
+ucb_agent = TSAgent(g, a)
+ucb_rewards = ucb_agent.run(30000,1000)
 x = []
-for i in range(100):
-	x.append(10*(i+1))
+for i in range(30):
+	x.append(1000*(i+1))
+
+print(ucb_rewards)
+plt.plot(x, [ucb_rewards[i]/x[i] for i in range(len(x))])
+
+ucb_agent = OC_TSAgent(g, a)
+ucb_rewards = ucb_agent.run(30000,1000)
+x = []
+for i in range(30):
+	x.append(1000*(i+1))
+
+plt.plot(x, [ucb_rewards[i]/x[i] for i in range(len(x))])
+
+# ucb_agent = E_graphAgent(g, a)
+# ucb_rewards = ucb_agent.run(1000,10)
+ucb_agent = EpsilonAgent(g, a)
+ucb_rewards = ucb_agent.run(10000, 1000)
+
+x = []
+for i in range(10):
+	x.append(1000*(i+1))
 
 print(ucb_rewards)
 plt.plot(x, [ucb_rewards[i]/x[i] for i in range(len(x))])

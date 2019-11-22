@@ -257,6 +257,11 @@ class EpsilonAgent(Agent):
 
 	# Run the algorithm for given horizons
 	def run(self, horizon=100, step_size = 5):
+		def positiveReward(sx):
+			# assignments = _getAssignmentFromString(sx)
+			# return assignments[-1] == 1
+			return sx[-1] == "1"
+			
 		ans = []
 		for t in range(horizon):
 			self._step(t, epsilon=0.2)
