@@ -13,8 +13,8 @@ class Agent(object):
 		raise NotImplementedError
 
 	def run(self, horizon=100, step_size=5):
-		self.rewards = np.zeros(len(A))
-		self.n_pulled = np.zeros(len(A))
+		self.rewards = np.zeros(len(self.actions))
+		self.n_pulled = np.zeros(len(self.actions))
 		ans = []
 		for t in range(horizon):
 			self._step(t)
@@ -30,15 +30,22 @@ class UCBAgent(Agent):
 		if t < len(self.actions):
 			# sample each arm/action once
 			assignments = self.graph.intervention(self.actions[t])
-			reward = assignments[len(assignments)]
+			reward = assignments[len(assignments)-1]
 			self.n_pulled[t] += 1
 			self.rewards[t] += reward
 		else:
 			# follow UCB algorithm
-			ucb = self.rewards/self.n_pulled + np.sqrt(2*np.log(t)/self.n_pulled)
+
+			ucb = (self.rewards * 1.0 / self.n_pulled ) + np.sqrt( 2 * np.log(t) / self.n_pulled )
 			a = np.argmax(ucb)
+			# if t % 10 == 0:
+			# 	print (" --- ")
+			# 	print (self.rewards * 1.0 / self.n_pulled )
+			# 	print (np.sqrt( 2 * np.log(t) / self.n_pulled ))
+			# 	print(a , self.actions[a])
+			# 	print(self.actions, self.rewards ,self.n_pulled )
 			assignments = self.graph.intervention(self.actions[a])
-			reward = assignments[len(assignments)]
+			reward = assignments[len(assignments)-1]
 			self.n_pulled[a] += 1
 			self.rewards[a] += reward
 
@@ -72,21 +79,21 @@ class KL_UCBAgent(Agent):
 		if len(self.actions) > 2 and t < len(self.actions):
 			# initialize by pulling all arms once
 			assignments = self.graph.intervention(self.actions[t])
-			reward = assignments[len(assignments)]
+			reward = assignments[len(assignments)-1]
 			self.n_pulled[t] += 1
 			self.rewards[t] += reward
 		elif len(self.actions) <= 2 and t < 2*len(self.actions):
 			# initialize by pulling all arms twice
 			# done to avoid ln(t)+3*ln(ln(t)) from becoming negative
 			assignments = self.graph.intervention(self.actions[t%len(self.actions)])
-			reward = assignments[len(assignments)]
+			reward = assignments[len(assignments)-1]
 			self.n_pulled[t%len(self.actions)] += 1
 			self.rewards[t%len(self.actions)] += reward
 		else:
 			ucb = self._objective(t)
 			arm = np.argmax(ucb)
 			assignments = self.graph.intervention(self.actions[arm])
-			reward = assignments[len(assignments)]
+			reward = assignments[len(assignments)-1]
 			self.n_pulled[arm] += 1
 			self.rewards[arm] += reward
 
@@ -98,7 +105,7 @@ class TSAgent(Agent):
 		x = np.random.beta(1+self.s, 1+self.f)
 		arm = np.argmax(x)
 		assignments = self.graph.intervention(self.actions[arm])
-		reward = assignments[len(assignments)]
+		reward = assignments[len(assignments)-1]
 		self.n_pulled[arm] += 1
 		self.s[arm] += reward; self.f[arm] += 1-reward
 
@@ -117,7 +124,7 @@ class OC_TSAgent(Agent):
 	def __init__(self, G, A):
 		super(OC_TSAgent, self).__init__(G, A)
 
-	def _step(self):
+	def _step(self,t):
 		succesChance = np.zeros( self.numAction )
 		for a in range( self.numAction ):
 			partionProb = np.random.dirichlet(self.dirch[:,a]).reshape((self.numPartition,1))
@@ -127,7 +134,7 @@ class OC_TSAgent(Agent):
 		best = np.argmax(succesChance)
 		d = self.actions[best]
 		d = self.graph.intervention(d) 
-		r = d[self.numAction]
+		r = d[self.numVar]
 		z = 0
 		for i in range(self.numVar):
 			z = z + ( 2**i * d[i])
@@ -151,6 +158,7 @@ class OC_TSAgent(Agent):
 			self._step(t)
 			if t%step_size==step_size-1:
 				ans.append(self.rewards.sum())
+				print(self.rewards.sum() / (t + 1) )
 		return ans
 
 

@@ -19,7 +19,7 @@ class graph_samples:
 
 	def linear_graph(self):
 		variables = np.arange(self.num_variables)
-		parents = [[]]*self.num_variables
+		parents = [[] for _ in range(self.num_variables)]
 		for i in range(1,self.num_variables):
 			parents[i].append(i-1)
 		parents = np.asarray(parents)
@@ -27,7 +27,7 @@ class graph_samples:
 
 	def disjoint_graph(self):
 		variables = np.arange(self.num_variables)
-		parents = [[]]*self.num_variables
+		parents = [[] for _ in range(self.num_variables)]
 		for i in range(self.num_variables-1):
 			parents[self.num_variables-1].append(i)
 		parents = np.asarray(parents)
@@ -35,7 +35,7 @@ class graph_samples:
 
 	def random_graph(self):
 		variables = np.arange(self.num_variables)
-		parents = [[]]*self.num_variables
+		parents = [[] for _ in range(self.num_variables)]
 		for i in range(1,num_variables):
 			x = np.random.randint(2, size=i)
 			for j in range(i):
