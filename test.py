@@ -49,8 +49,8 @@ for i in range(n-1):
 # plt.plot(x, [ucb_rewards[i]/x[i] for i in range(len(x))])
 
 
-ucb_agent = EpsilonAgent(g, a)
-ucb_rewards = ucb_agent.run(1000)
+ucb_agent = E_graphAgent(g, a)
+ucb_rewards = ucb_agent.run(1000,10)
 x = []
 for i in range(100):
 	x.append(10*(i+1))

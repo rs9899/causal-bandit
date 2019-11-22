@@ -4,7 +4,7 @@ Class descriptions for all agents.
 
 import numpy as np
 import random
-
+from tqdm import tqdm
 
 class Agent(object):
 	def __init__(self, G, A):
@@ -20,7 +20,7 @@ class Agent(object):
 		self.rewards = np.zeros(len(self.actions))
 		self.n_pulled = np.zeros(len(self.actions))
 		ans = []
-		for t in range(horizon):
+		for t in tqdm(range(horizon)):
 			self._step(t)
 			if t%step_size==step_size-1:
 				ans.append(self.rewards.sum())
@@ -311,8 +311,8 @@ class SampleGraph:
 		self.ZeroCount = {}
 		self.OneCount = {}
 		for i in self.variables:
-			self.ZeroCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
-			self.OneCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
+			self.ZeroCount[i] = np.zeros([2**len(self.parents[i]),]) + 1
+			self.OneCount[i] = np.zeros([2**len(self.parents[i]),]) + 1
 
 	def update(self,assignment,varIntervened = []):
 		for i in self.variables:
@@ -323,24 +323,28 @@ class SampleGraph:
 					idx = idx + (assignment[p] * (2**j) )
 					j = j + 1
 				if assignment[i] == 0:
-					ZeroCount[idx] += 1
+					self.ZeroCount[i][idx] += 1
 				else:
-					OneCount[idx] += 1
+					self.OneCount[i][idx] += 1
 
 	def binaryIntervention(self, assignment = {}):
+		returnAssign = {}
 		for v in self.variables:
 			if v not in assignment:
 				idx = 0
 				j = 0
-				for p in self.parents[i]:
-					idx = idx + (assignment[p] * (2**j) )
+				for p in self.parents[v]:
+					idx = idx + (returnAssign[p] * (2**j) )
 					j = j + 1
-				p = ZeroCount[idx] * 1.0 / (OneCount[idx] + ZeroCount[idx])
-				if random.random() < x[0]:
-					assignment[v] = 0
+				p = self.ZeroCount[v][idx] * 1.0 / (self.OneCount[v][idx] + self.ZeroCount[v][idx])
+				if random.random() < p:
+					returnAssign[v] = 0
 				else:
-					assignment[v] = 1
-		return assignment[len(self.variables)-1]
+					returnAssign[v] = 1
+			else:
+				returnAssign[v] = assignment[v]
+
+		return returnAssign[ len(self.variables) - 1 ]
 				
 
 
@@ -351,33 +355,40 @@ class E_graphAgent(Agent):
 		self.epsilon = epsilon
 		self.step = step
 
-	def _step(self):
+	def _step(self,time_step,epsilon):
+		# WRITE CODE FOR EPSILON DECAY >>> LESS EXPLORATION
+
+		actions = self.actions
 		if random.random() < epsilon:
-			bestAction = int(random.random() * len(self.actions))
+			bestAction = int(random.random() * len(actions))
 			assignment = self.graph.intervention(actions[bestAction])
 		else:
 			bestAction = 0
 			rewardArray = []
 			for action in actions:
 				reward = 0
-				for i in range(int(1e4)):
+				for i in range(int(1e2)):
 					reward += self.myGraph.binaryIntervention(action)
 				rewardArray.append(reward)
 			bestAction = np.argmax(np.asarray(rewardArray))
 			assignment = self.graph.intervention(actions[bestAction])
 		
-		self.myGraph.update(assignment , actions[bestAction].keys )
+		self.rewards[bestAction] += assignment[self.rewardVariable]
+
+		self.myGraph.update(assignment , list(actions[bestAction].keys()) )
 
 
-	def run(self,horizon=100):
+	def run(self,horizon=100,step_size=5):
 		self.myGraph = SampleGraph(self.graph)
 		self.numAction = len(self.actions)
 		self.rewards = np.zeros(self.numAction)
 		ans = []
-		for t in range(horizon):
-			self._step(t)
+		for t in tqdm(range(horizon)):
+			self._step(t,self.epsilon)
 			if t%step_size==step_size-1:
-				ans.append(self.rewards.sum())
+				cum_award = self.rewards.sum()
+				ans.append(cum_award)
+				# print(cum_award)
 		return ans
 		
 
