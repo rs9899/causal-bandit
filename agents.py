@@ -111,7 +111,7 @@ class TSAgent(Agent):
 		self.f = np.zeros(len(self.actions), dtype=int)
 		self.n_pulled = np.zeros(len(self.actions), dtype=int)
 		ans = []
-		for t in range(horizon):
+		for t in tqdm(range(horizon)):
 			self._step(t)
 			if t % step_size == step_size - 1:
 				ans.append(self.s.sum())
@@ -144,7 +144,7 @@ class OC_TSAgent(Agent):
 		self.dirc = np.ones([n_part, len(self.actions)], dtype=int)
 		self.rewards = np.zeros(len(self.actions))
 		ans = []
-		for t in range(horizon):
+		for t in tqdm(range(horizon)):
 			self._step(t)
 			if t % step_size == step_size - 1:
 				ans.append(self.rewards.sum())
@@ -263,7 +263,7 @@ class EpsilonAgent(Agent):
 			return sx[-1] == "1"
 			
 		ans = []
-		for t in range(horizon):
+		for t in tqdm(range(horizon)):
 			self._step(t, epsilon=0.2)
 			if t % step_size == step_size - 1:
 				reward_counts = [
