@@ -22,7 +22,7 @@ class Agent(object):
 		ans = []
 		for t in tqdm(range(horizon)):
 			self._step(t)
-			if t%step_size==step_size-1:
+			if t % step_size == step_size - 1:
 				ans.append(self.rewards.sum())
 		return ans
 
@@ -39,15 +39,8 @@ class UCBAgent(Agent):
 			self.rewards[t] += reward
 		else:
 			# follow UCB algorithm
-
 			ucb = (self.rewards * 1.0 / self.n_pulled ) + np.sqrt( 2 * np.log(t) / self.n_pulled )
 			a = np.argmax(ucb)
-			# if t % 10 == 0:
-			# 	print (" --- ")
-			# 	print (self.rewards * 1.0 / self.n_pulled )
-			# 	print (np.sqrt( 2 * np.log(t) / self.n_pulled ))
-			# 	print(a , self.actions[a])
-			# 	print(self.actions, self.rewards ,self.n_pulled )
 			assignments = self.graph.intervention(self.actions[a])
 			reward = assignments[len(assignments)-1]
 			self.n_pulled[a] += 1
@@ -120,7 +113,7 @@ class TSAgent(Agent):
 		ans = []
 		for t in range(horizon):
 			self._step(t)
-			if t%step_size==step_size-1:
+			if t % step_size == step_size - 1:
 				ans.append(self.s.sum())
 		return ans
 
@@ -128,43 +121,34 @@ class OC_TSAgent(Agent):
 	def __init__(self, G, A):
 		super(OC_TSAgent, self).__init__(G, A)
 
-	def _step(self,t):
-		succesChance = np.zeros( self.numAction )
-		for a in range( self.numAction ):
-			partionProb = np.random.dirichlet(self.dirch[:,a]).reshape((self.numPartition,1))
-			sampl = np.random.beta(self.beta[:,0],self.beta[:,1]).reshape((1 , self.numPartition))
-			succesChance[a] = np.asscalar(sampl @ partionProb)
+	def _step(self, t):
+		success_chance = np.zeros(len(self.actions))
+		for a in range(len(self.actions)):
+			partition_prob = np.random.dirichlet(self.dirc[:,a]).reshape(-1,1)
+			sample_prob = np.random.beta(self.beta[:,0], self.beta[:,1]).reshape(1,-1)
+			success_chance[a] = (sample_prob @ partition_prob).item()
 		
-		best = np.argmax(succesChance)
-		d = self.actions[best]
-		d = self.graph.intervention(d) 
-		r = d[self.numVar]
-		z = 0
-		for i in range(self.numVar):
-			z = z + ( 2**i * d[i])
+		arm = np.argmax(success_chance)
+		assignments = self.graph.intervention(self.actions[arm])
+		reward = assignments[len(assignments)-1]
 
-		self.dirch[z,best] += 1
-		self.rewards[best] += r
-		if r == 1:
-			self.beta[z,0] += 1
-		else:
-			self.beta[z,1] += 1
+		z = sum([2**i * assignments[i] for i in range(len(self.graph.variables)-1)])
+
+		self.dirc[z, arm] += 1
+		self.beta[z, 1-int(reward)] += 1
+		self.rewards[arm] += reward
 
 	def run(self, horizon=100, step_size=5):
-		self.numAction = len(self.actions)
-		
-		self.numPartition = 2 ** (self.numVar)
-		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
-		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
-		self.rewards = np.zeros(self.numAction)
+		n_part = 2 ** (len(self.graph.variables) - 1)
+		self.beta = np.ones([n_part, 2], dtype=int)
+		self.dirc = np.ones([n_part, len(self.actions)], dtype=int)
+		self.rewards = np.zeros(len(self.actions))
 		ans = []
 		for t in range(horizon):
 			self._step(t)
-			if t%step_size==step_size-1:
+			if t % step_size == step_size - 1:
 				ans.append(self.rewards.sum())
-				print(self.rewards.sum() / (t + 1) )
 		return ans
-
 
 class EpsilonAgent(Agent):
 	def __init__(self, G, A):
@@ -262,32 +246,17 @@ class EpsilonAgent(Agent):
 						assignment_count[parent_assignment] = 1
 						reward_count[parent_assignment] = 0
 						consistent_assn_count[parent_assignment] = 0
-					
-					if key[var] == action:
-						if key[-1] == 1:
-							reward_count[parent_assignment] += 1
-						consistent_assn_count[parent_assignment] += 1
-						
+				
 				for key in assignment_count.keys():
 					if consistent_assn_count[key] != 0:
 						expectations[2*var+action] += (reward_count[key] / consistent_assn_count[key]) * (assignment_count[key] * self.total_actions)
 
 			action = expectations.index(max(expectations))
-			
-			var = action // 2
-			action = action % 2
-
 			assignment = self.graph.intervention({var: action})
 			self._updateProbabilities(assignment)
 
 	# Run the algorithm for given horizons
 	def run(self, horizon=100, step_size = 5):
-
-		def positiveReward(sx):
-			# assignments = _getAssignmentFromString(sx)
-			# return assignments[-1] == 1
-			return sx[-1] == "1"
-
 		ans = []
 		for t in range(horizon):
 			self._step(t, epsilon=0.2)
@@ -299,9 +268,6 @@ class EpsilonAgent(Agent):
 					]
 				ans.append(sum(reward_counts))
 		return ans
-
-
-
 
 class SampleGraph:
 	def __init__(self,G):
@@ -348,7 +314,6 @@ class SampleGraph:
 				
 
 
-
 class E_graphAgent(Agent):
 	def __init__(self,G,A,epsilon = 0.1,step = 10):
 		super(E_graphAgent, self).__init__(G, A)
@@ -390,5 +355,3 @@ class E_graphAgent(Agent):
 				ans.append(cum_award)
 				# print(cum_award)
 		return ans
-		
-
