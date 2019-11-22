@@ -11,14 +11,16 @@ class graph:
 		random.seed(4)
 
 	def intervention(self, assignment):
+		ret = {}
 		for v in self.variables:
 			if v in assignment:
+				ret[v] = assignment[v]
 				continue
 			x = self.distribution[v]
 			for p in self.parents[v]:
 				x = x[assignment[p]]
 			if random.random() < x[0]:
-				assignment[v] = 0
+				ret[v] = 0
 			else:
-				assignment[v] = 1
-		return assignment
+				ret[v] = 1
+		return ret

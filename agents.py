@@ -343,10 +343,32 @@ class E_graphAgent(Agent):
 		self.step = step
 
 	def _step(self):
-		return
+		if random.random() < epsilon:
+			bestAction = int(random.random() * len(self.actions))
+			assignment = self.graph.intervention(actions[bestAction])
+		else:
+			bestAction = 0
+			rewardArray = []
+			for action in actions:
+				reward = 0
+				for i in range(int(1e4)):
+					reward += self.myGraph.binaryIntervention(action)
+				rewardArray.append(reward)
+			bestAction = np.argmax(np.asarray(rewardArray))
+			assignment = self.graph.intervention(actions[bestAction])
+		
+		self.myGraph.update(assignment , actions[bestAction].keys )
+
 
 	def run(self,horizon=100):
 		self.myGraph = SampleGraph(self.graph)
-		for 
+		self.numAction = len(self.actions)
+		self.rewards = np.zeros(self.numAction)
+		ans = []
+		for t in range(horizon):
+			self._step(t)
+			if t%step_size==step_size-1:
+				ans.append(self.rewards.sum())
+		return ans
 		
 
