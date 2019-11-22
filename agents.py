@@ -3,11 +3,15 @@ Class descriptions for all agents.
 """
 
 import numpy as np
+import random
+
 
 class Agent(object):
 	def __init__(self, G, A):
 		self.graph = G
 		self.actions = A
+		self.numVar = len(self.graph.variables) - 1
+		self.rewardVariable = self.numVar
 
 	def _step(self, t=0):
 		raise NotImplementedError
@@ -146,199 +150,189 @@ class OC_TSAgent(Agent):
 				ans.append(self.rewards.sum())
 		return ans
 
-# class EpsilonAgent(Agent):
-# 	def __init__(self, G, A):
-# 		super(EpsilonAgent, self).__init__(G, A)
+class EpsilonAgent(Agent):
+	def __init__(self, G, A):
+		super(EpsilonAgent, self).__init__(G, A)
 
-# 		# This stores the intervention and rewards in a dictionary format:
-# 		# self.run_history["000010"] = 3 indicates that values
-# 		# [x1, x2, x3, x4, x5] = [0, 0, 0, 0, 1] led to a reward of 0 (the 
-# 		# last character in the string) in exactly 3 runs
-# 		self.run_history = dict()
+		# This stores the intervention and rewards in a dictionary format:
+		# self.run_history["000010"] = 3 indicates that values
+		# [x1, x2, x3, x4, x5] = [0, 0, 0, 0, 1] led to a reward of 0 (the 
+		# last character in the string) in exactly 3 runs
+		self.run_history = dict()
 
-# 		# Total number of actions which led to a reward of 1 and total 
-# 		# number of actions
-# 		self.total_successful_actions = 0
-# 		self.total_actions = 0
+		# Total number of actions which led to a reward of 1 and total 
+		# number of actions
+		self.total_successful_actions = 0
+		self.total_actions = 0
 
 
-# 	# Return a list of assignments to variables in graph given an encoding
-# 	# of the assignments in a string format
-# 	def _getAssignmentFromString(self, sx):
-# 		return list(map(int, sx))
+	# Return a list of assignments to variables in graph given an encoding
+	# of the assignments in a string format
+	def _getAssignmentFromString(self, sx):
+		return list(map(int, sx))
 
-# 	# Return an encoding of the assignments in a string format given a 
-# 	# list of assignments to variables in graph
-# 	def _getStringFromAssignment(self, sx):
-# 		# If the input is a dictionary (i.e. an assignment dictionary)
-# 		#
-# 		# Can be sped up using the invariant mapping present in 
-# 		# assignment.values()
-# 		if type(sx) is dict:
-# 			string = "0" * len(self.graph.variables)
-# 			for key in assignment.keys():
-# 				string[int(key)] = assignment[key]
+	# Return an encoding of the assignments in a string format given a 
+	# list of assignments to variables in graph
+	def _getStringFromAssignment(self, assignment):
+		# If the input is a dictionary (i.e. an assignment dictionary)
+		#
+		# Can be sped up using the invariant mapping present in 
+		# assignment.values()
+		if type(assignment) is dict:
+			string = [0] * len(self.graph.variables)
+			for key in assignment.keys():
+				string[int(key)] = assignment[key]
 
-# 			return string
+			return "".join(map(str, string))
 
-# 		# If input is a list of assignments
-# 		if type(sx) is list:
-# 			return "".join(map(str, sx))
+		# If input is a list of assignments
+		if type(assignment) is list:
+			return "".join(map(str, assignment))
 
-# 		raise NotImplementedError
+		raise NotImplementedError
 
-# 	# Update self.prob_successful_action and self.prob_action given the
-# 	# sample 'assignment'
-# 	def _updateProbabilities(self, assignment):
-# 		reward = assignment[len(actions) - 1]
+	# Update self.prob_successful_action and self.prob_action given the
+	# sample 'assignment'
+	def _updateProbabilities(self, assignment):
+		actions = self.actions
+		reward = assignment[self.rewardVariable]
 
-# 		for key in assignment.keys():
-# 			self.count_action[key] += 1
-# 			self.total_actions += 1
+		for key in assignment.keys():
+			self.total_actions += 1
 
-# 			if reward == 1:
-# 				self.count_successful_action[key] += 1
-# 				self.total_successful_actions += 1
+			if reward == 1:
+				self.total_successful_actions += 1
 
-# 		dict_index = self._getStringFromAssignment(assignment)
+		dict_index = self._getStringFromAssignment(assignment)
 
-# 		if dict_index not in self.run_history.keys():
-# 			self.run_history[dict_index] = 1
-# 		else:
-# 			self.run_history[dict_index] += 1
+		if dict_index not in self.run_history.keys():
+			self.run_history[dict_index] = 1
+		else:
+			self.run_history[dict_index] += 1
 
-# 	# Run a single iteration
-# 	def _step(self, time_step, epsilon):
-# 		# Explore different actions
-# 		if random.random() < epsilon:
-# 			i = int(random.random * len(self.actions))
-# 			assignment = self.graph.intervention(actions[i])
+	# Run a single iteration
+	def _step(self, time_step, epsilon):
+		# Explore different actions
+		actions = self.actions
+		if random.random() < epsilon:
+			i = int(random.random() * len(self.actions))
+			assignment = self.graph.intervention(actions[i])
 			
-# 			self.update_probabilities(assignment)
+			self._updateProbabilities(assignment)
 
-# 		# Exploit using run history table
-# 		else:
-# 			expectations = [0] * len(actions)
+		# Exploit using run history table
+		else:
+			
+			expectations = [0] * len(actions)
 
-# 			for x in actions:
-# 				var = list(actions.keys())[0]
-# 				action = x[var]
+			for x in actions:
+				var = list(x.keys())[0]
+				action = x[var]
 
-# 				assignment_count = dict()
-# 				reward_count = dict()
-# 				consistent_assn_count = dict()
-
-# 				for key in run_history.keys():
-# 					parent_assignment = [
-# 						i for i in key 
-# 						if i in self.graph.parents[var]
-# 					]
-
-# 					if parent_assignment in assignment_count.keys():
-# 						assignment_count[parent_assignment] += 1
-# 					else:
-# 						assignment_count[parent_assignment] = 1
-# 						reward_count[parent_assignment] = 0
-# 						consistent_assn_count[parent_assignment] = 0
+				assignment_count = dict()
+				reward_count = dict()
+				consistent_assn_count = dict()
+				run_history = self.run_history
+				for key in run_history.keys():
+					parent_assignment = [
+						i for i in key 
+						if i in self.graph.parents[var]
+					]
+					parent_assignment = "".join(map(str, parent_assignment))
 					
-# 					if key[var] == action:
-# 						if key[-1] == 1:
-# 							reward_count[parent_assignment] += 1
-# 						consistent_assn_count[parent_assignment] += 1
-						
-# 				for key in assignment_count.keys():
-# 					expectations[2*var+action] += 
-# 						(reward_count[key] / consistent_assn_count[key]) *
-# 						(assignment_count[key] * self.total_actions)
-
-# 			action = expectations.index(max(action))
-			
-# 			var = action // 2
-# 			action = action % 2
-
-# 			assignment = self.graph.intervention({var: action})
-# 			self.update_probabilities(assignment)
-
-# 			raise NotImplementedError
-
-# 	# Run the algorithm for given horizons
-# 	def run(self, horizon=100):
-
-# 		def positiveReward(sx):
-# 			# assignments = _getAssignmentFromString(sx)
-# 			# return assignments[-1] == 1
-# 			return sx[-1] == "1"
-
-# 		for t in range(horizon):
-# 			self._step(t, epsilon=0.2)
-
-# 		# Compile all runs which resulted in a positive record
-# 		reward_counts = [
-# 			self.run_history[assn]
-# 			for assn in self.run_history.keys()
-# 			if positiveReward(assn)
-# 			]
-		
-# 		return sum(reward_counts)
-
-
-
-
-
-
-# class SampleGraph:
-# 	def __init__(self,G):
-# 		random.seed(4)
-# 		self.variables = np.arange(len(G.parents))
-# 		self.parents = G.parents
-# 		self.ZeroCount = {}
-# 		self.OneCount = {}
-# 		for i in self.variables:
-# 			self.ZeroCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
-# 			self.OneCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
-
-# 	def update(self,assignment,varIntervened = []):
-# 		for i in self.variables:
-# 			if i not in varIntervened:
-# 				idx = 0
-# 				j = 0
-# 				for p in self.parents[i]:
-# 					idx = idx + (assignment[p] * (2**j) )
-# 					j = j + 1
-# 				if assignment[i] == 0:
-# 					ZeroCount[idx] += 1
-# 				else:
-# 					OneCount[idx] += 1
-
-# 	def binaryIntervention(self, assignment = {}):
-# 		for v in self.variables:
-# 			if v not in assignment:
-# 				idx = 0
-# 				j = 0
-# 				for p in self.parents[i]:
-# 					idx = idx + (assignment[p] * (2**j) )
-# 					j = j + 1
-# 				p = ZeroCount[idx] * 1.0 / (OneCount[idx] + ZeroCount[idx])
-# 				if random.random() < x[0]:
-# 					assignment[v] = 0
-# 				else:
-# 					assignment[v] = 1
-# 		return assignment[len(self.variables)-1]
+					if parent_assignment in assignment_count.keys():
+						assignment_count[parent_assignment] += 1
+					else:
+						assignment_count[parent_assignment] = 1
+						reward_count[parent_assignment] = 0
+						consistent_assn_count[parent_assignment] = 0
 				
+				for key in assignment_count.keys():
+					if consistent_assn_count[key] != 0:
+						expectations[2*var+action] += (reward_count[key] / consistent_assn_count[key]) * (assignment_count[key] * self.total_actions)
 
+			action = expectations.index(max(expectations))
+			assignment = self.graph.intervention({var: action})
+			self._updateProbabilities(assignment)
 
+	# Run the algorithm for given horizons
+	def run(self, horizon=100, step_size = 5):
+		ans = []
+		for t in range(horizon):
+			self._step(t, epsilon=0.2)
+			if t % step_size == step_size - 1:
+				reward_counts = [
+					self.run_history[assn]
+					for assn in self.run_history.keys()
+					if positiveReward(assn)
+					]
+				ans.append(sum(reward_counts))
+		return ans
 
-# class E_graphAgent(Agent):
-# 	def __init__(self,G,A,epsilon = 0.1,step = 10):
-# 		super(E_graphAgent, self).__init__(G, A)
-# 		self.epsilon = epsilon
-# 		self.step = step
+class SampleGraph:
+	def __init__(self,G):
+		random.seed(4)
+		self.variables = np.arange(len(G.parents))
+		self.parents = G.parents
+		self.ZeroCount = {}
+		self.OneCount = {}
+		for i in self.variables:
+			self.ZeroCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
+			self.OneCount[i] = np.random.zeros(2**len(self.parents[i])) + 1
 
-# 	def _step(self):
-# 		return
+	def update(self,assignment,varIntervened = []):
+		for i in self.variables:
+			if i not in varIntervened:
+				idx = 0
+				j = 0
+				for p in self.parents[i]:
+					idx = idx + (assignment[p] * (2**j) )
+					j = j + 1
+				if assignment[i] == 0:
+					ZeroCount[idx] += 1
+				else:
+					OneCount[idx] += 1
 
-# 	def run(self,horizon=100):
-# 		self.myGraph = SampleGraph(self.graph)
-# 		for 
+	def binaryIntervention(self, assignment = {}):
+		for v in self.variables:
+			if v not in assignment:
+				idx = 0
+				j = 0
+				for p in self.parents[i]:
+					idx = idx + (assignment[p] * (2**j) )
+					j = j + 1
+				p = ZeroCount[idx] * 1.0 / (OneCount[idx] + ZeroCount[idx])
+				if random.random() < x[0]:
+					assignment[v] = 0
+				else:
+					assignment[v] = 1
+		return assignment[len(self.variables)-1]
+
+	def _step(self):
+		if random.random() < epsilon:
+			bestAction = int(random.random() * len(self.actions))
+			assignment = self.graph.intervention(actions[bestAction])
+		else:
+			bestAction = 0
+			rewardArray = []
+			for action in actions:
+				reward = 0
+				for i in range(int(1e4)):
+					reward += self.myGraph.binaryIntervention(action)
+				rewardArray.append(reward)
+			bestAction = np.argmax(np.asarray(rewardArray))
+			assignment = self.graph.intervention(actions[bestAction])
 		
+		self.myGraph.update(assignment , actions[bestAction].keys )
 
+
+	def run(self,horizon=100):
+		self.myGraph = SampleGraph(self.graph)
+		self.numAction = len(self.actions)
+		self.rewards = np.zeros(self.numAction)
+		ans = []
+		for t in range(horizon):
+			self._step(t)
+			if t%step_size==step_size-1:
+				ans.append(self.rewards.sum())
+		return ans
