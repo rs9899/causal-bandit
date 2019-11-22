@@ -46,7 +46,6 @@ class Graph(object):
 			l.append(u)
 		return l
 
-
 	def P_helper(self,X,vals,A):
 		if len(X) == 0:
 			return 1.0
@@ -58,7 +57,7 @@ class Graph(object):
 				return 0.0
 		pa_var = self.parents[var]
 		if len(pa_var) == 0:
-			p = self.distribution[var][0]
+			p = self.distribution[var]
 			if vals[var] == 0:
 				p = 1 - p
 			return p * self.P_helper(X[1:], vals, A)
@@ -82,12 +81,10 @@ class Graph(object):
 
 		return prob
 
-
-
-	def mu_star(self,actions):
+	def mu_star(self, actions):
 		return max([
 			self.P_helper(
 					[self.rewardVariable],
 					{self.rewardVariable : 1},
 					action
-					) for action in actions	])		
+					) for action in actions	])
