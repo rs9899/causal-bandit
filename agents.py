@@ -5,7 +5,6 @@ Class descriptions for all agents.
 import numpy as np
 import random
 
-
 class Agent(object):
 	def __init__(self, G, A):
 		self.graph = G
@@ -307,6 +306,12 @@ class SampleGraph:
 				else:
 					assignment[v] = 1
 		return assignment[len(self.variables)-1]
+
+class E_graphAgent(Agent):
+	def __init__(self,G,A,epsilon = 0.1,step = 10):
+		super(E_graphAgent, self).__init__(G, A)
+		self.epsilon = epsilon
+		self.step = step
 
 	def _step(self):
 		if random.random() < epsilon:
