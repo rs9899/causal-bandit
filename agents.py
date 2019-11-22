@@ -117,39 +117,39 @@ class OC_TSAgent(Agent):
 	def __init__(self, G, A):
 		super(OC_TSAgent, self).__init__(G, A)
 
-	def _step(self):
-		succesChance = np.zeros( self.numAction )
-		for a in range( self.numAction ):
-			partionProb = np.random.dirichlet(self.dirch[:,a]).reshape((self.numPartition,1))
-			sampl = np.random.beta(self.beta[:,0],self.beta[:,1]).reshape((1 , self.numPartition))
-			succesChance[a] = np.asscalar(sampl @ partionProb)
+	def _step(self, t):
+		success_chance = np.zeros(len(self.actions))
+		for a in range(len(self.actions)):
+			partition_prob = np.random.dirichlet(self.dirc[:,a]).reshape(-1,1)
+			sample_prob = np.random.beta(self.beta[:,0],self.beta[:,1]).reshape(1,-1)
+			success_chance[a] = (sample_prob @ partition_prob).item()
 		
-		best = np.argmax(succesChance)
-		d = self.actions[best]
-		d = self.graph.intervention(d) 
-		r = d[self.numAction]
+		arm = np.argmax(success_chance)
+		assignments = self.graph.intervention(self.actions[arm])
+		reward = assignments[len(assignments)-1]
 		z = 0
-		for i in range(self.numVar):
-			z = z + ( 2**i * d[i])
+		for i in range(len(self.graph.variables)-1):
+			z += 2**i * assignments[i]
 
-		self.dirch[z,best] += 1
-		self.rewards[best] += r
+		self.dirch[z, arm] += 1
+		self.rewards[arm] += reward
 		if r == 1:
 			self.beta[z,0] += 1
 		else:
 			self.beta[z,1] += 1
 
 	def run(self, horizon=100, step_size=5):
-		self.numAction = len(self.actions)
-		self.numVar = len(self.graph.variables) - 1
-		self.numPartition = 2 ** (self.numVar)
-		self.beta = np.zeros((self.numPartition,2), dtype=int) + 1
-		self.dirch = np.zeros((self.numPartition, self.numAction), dtype=int) + 1
-		self.rewards = np.zeros(self.numAction)
+		# self.numAction = len(self.actions)
+		# self.numVar = len(self.graph.variables) - 1
+		# self.numPartition = 2 ** (self.numVar)
+		n_part = 2 ** (len(self.graph.variables) - 1)
+		self.beta = np.ones([n_part,2], dtype=int)
+		self.dirc = np.ones([n_part, len(self.actions)], dtype=int)
+		self.rewards = np.zeros(len(self.actions))
 		ans = []
 		for t in range(horizon):
 			self._step(t)
-			if t%step_size==step_size-1:
+			if t % step_size == step_size - 1:
 				ans.append(self.rewards.sum())
 		return ans
 
