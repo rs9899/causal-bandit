@@ -378,9 +378,6 @@ class SampleGraph:
 		return self.P_helper([self.rewardVariable] , {self.rewardVariable : 1} , assignment	)
 
 
-				
-
-
 class E_graphAgent(Agent):
 	def __init__(self,G,A,epsilon = 0.1,step = 100 , switch = 0):
 		super(E_graphAgent, self).__init__(G, A)
