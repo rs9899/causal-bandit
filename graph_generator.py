@@ -61,9 +61,12 @@ class GraphSampler(object):
 			if len(graph.parents[v])==0:
 				file1.write(str(graph.distribution[v])+'\n')
 				continue
-			l = deepcopy(graph.distribution[v])
-			l = l.reshape(-1)
+			# l = deepcopy(graph.distribution[v])
+			shap = graph.distribution[v].shape
+			l = graph.distribution[v].reshape(-1)
 			file1.writelines([str(x) + " " for x in l])
+			l.reshape(shap)
+			
 			file1.write('\n')
 		file1.close()
 

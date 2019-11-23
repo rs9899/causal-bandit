@@ -276,7 +276,6 @@ class EpsilonAgent(Agent):
 
 class SampleGraph:
 	def __init__(self,G):
-		random.seed(4)
 		self.variables = np.arange(len(G.parents))
 		self.numVar = len(self.variables) - 1
 		self.rewardVariable = self.numVar
@@ -379,7 +378,7 @@ class SampleGraph:
 
 
 class E_graphAgent(Agent):
-	def __init__(self,G,A,epsilon = 0.1,step = 100 , switch = 0):
+	def __init__(self,G,A,epsilon = 0.05,step = 200 , switch = 0):
 		super(E_graphAgent, self).__init__(G, A)
 		self.epsilon = epsilon
 		self.step = step
@@ -440,14 +439,13 @@ class OC_TS_ED_Agent(OC_TSAgent):
 		assignments = self.graph.intervention(self.actions[arm])
 		reward = assignments[len(assignments)-1]
 
-		z = sum([2**i * assignments[i] for i in self.graph.parents[self.numVar]])
-
+		z = sum([2**i * assignments[self.graph.parents[self.numVar][i]] for i in range(len(self.graph.parents[self.numVar]))])
 		self.dirc[z, arm] += 1
 		self.beta[z, 1-int(reward)] += 1
 		self.rewards[arm] += reward
 
 	def run(self, horizon=100, step_size=5):
-		n_part = len(self.graph.parents[self.numVar])
+		n_part = 2 ** len(self.graph.parents[self.numVar])
 		self.beta = np.ones([n_part, 2], dtype=int)
 		self.dirc = np.ones([n_part, len(self.actions)], dtype=int)
 		self.rewards = np.zeros(len(self.actions))
@@ -473,7 +471,7 @@ class OC_TS_Empirical_Agent(OC_TSAgent):
 		assignments = self.graph.intervention(self.actions[arm])
 		reward = assignments[len(assignments)-1]
 
-		z = sum([2**i * assignments[i] for i in self.graph.parents[self.numVar]])
+		z = sum([2**i * assignments[i] for i in range(len(self.graph.variables) - 1)])
 
 		self.empirical[z, arm] += 1
 		self.beta[z, 1-int(reward)] += 1
