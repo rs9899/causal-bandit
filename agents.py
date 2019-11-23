@@ -424,3 +424,70 @@ class E_graphAgent(Agent):
 				ans.append(cum_award)
 				# print(cum_award)
 		return ans
+
+class OC_TS_ED_Agent(OC_TSAgent):
+	def __init__(self, G, A):
+		super(OC_TS_ED_Agent, self).__init__(G, A)
+
+	def _step(self, t):
+		success_chance = np.zeros(len(self.actions))
+		for a in range(len(self.actions)):
+			partition_prob = np.random.dirichlet(self.dirc[:,a]).reshape(-1,1)
+			sample_prob = np.random.beta(self.beta[:,0], self.beta[:,1]).reshape(1,-1)
+			success_chance[a] = (sample_prob @ partition_prob).item()
+		
+		arm = np.argmax(success_chance)
+		assignments = self.graph.intervention(self.actions[arm])
+		reward = assignments[len(assignments)-1]
+
+		z = sum([2**i * assignments[i] for i in self.graph.parents[self.numVar]])
+
+		self.dirc[z, arm] += 1
+		self.beta[z, 1-int(reward)] += 1
+		self.rewards[arm] += reward
+
+	def run(self, horizon=100, step_size=5):
+		n_part = 2 ** (len(self.graph.variables) - 1)
+		self.beta = np.ones([n_part, 2], dtype=int)
+		self.dirc = np.ones([n_part, len(self.actions)], dtype=int)
+		self.rewards = np.zeros(len(self.actions))
+		ans = []
+		for t in tqdm(range(horizon)):
+			self._step(t)
+			if t % step_size == step_size - 1:
+				ans.append(self.rewards.sum())
+		return ans
+
+class OC_TS_Empirical_Agent(OC_TSAgent):
+	def __init__(self, G, A):
+		super(OC_TS_Empirical_Agent, self).__init__(G, A)
+
+	def _step(self, t):
+		success_chance = np.zeros(len(self.actions))
+		for a in range(len(self.actions)):
+			partition_prob = (self.empirical[:,a] / np.sum(self.empirical[:,a])).reshape(-1,1)
+			sample_prob = np.random.beta(self.beta[:,0], self.beta[:,1]).reshape(1,-1)
+			success_chance[a] = (sample_prob @ partition_prob).item()
+		
+		arm = np.argmax(success_chance)
+		assignments = self.graph.intervention(self.actions[arm])
+		reward = assignments[len(assignments)-1]
+
+		z = sum([2**i * assignments[i] for i in self.graph.parents[self.numVar]])
+
+		self.empirical[z, arm] += 1
+		self.beta[z, 1-int(reward)] += 1
+		self.rewards[arm] += reward
+
+	def run(self, horizon=100, step_size=5):
+		n_part = 2 ** (len(self.graph.variables) - 1)
+		self.beta = np.ones([n_part, 2], dtype=int)
+		self.empirical = np.ones([n_part, len(self.actions)], dtype=int)
+		self.rewards = np.zeros(len(self.actions))
+		ans = []
+		for t in tqdm(range(horizon)):
+			self._step(t)
+			if t % step_size == step_size - 1:
+				ans.append(self.rewards.sum())
+		return ans
+
