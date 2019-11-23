@@ -447,7 +447,7 @@ class OC_TS_ED_Agent(OC_TSAgent):
 		self.rewards[arm] += reward
 
 	def run(self, horizon=100, step_size=5):
-		n_part = 2 ** (len(self.graph.variables) - 1)
+		n_part = len(self.graph.parents[self.numVar])
 		self.beta = np.ones([n_part, 2], dtype=int)
 		self.dirc = np.ones([n_part, len(self.actions)], dtype=int)
 		self.rewards = np.zeros(len(self.actions))
