@@ -154,17 +154,6 @@ class EpsilonAgent(Agent):
 	def __init__(self, G, A):
 		super(EpsilonAgent, self).__init__(G, A)
 
-		# This stores the intervention and rewards in a dictionary format:
-		# self.run_history["000010"] = 3 indicates that values
-		# [x1, x2, x3, x4, x5] = [0, 0, 0, 0, 1] led to a reward of 0 (the 
-		# last character in the string) in exactly 3 runs
-		self.run_history = dict()
-
-		# Total number of actions which led to a reward of 1 and total 
-		# number of actions
-		self.total_successful_actions = 0
-		self.total_actions = 0
-
 
 	# Return a list of assignments to variables in graph given an encoding
 	# of the assignments in a string format
@@ -257,10 +246,23 @@ class EpsilonAgent(Agent):
 
 	# Run the algorithm for given horizons
 	def run(self, horizon=100, step_size = 5):
+		# This stores the intervention and rewards in a dictionary format:
+		# self.run_history["000010"] = 3 indicates that values
+		# [x1, x2, x3, x4, x5] = [0, 0, 0, 0, 1] led to a reward of 0 (the 
+		# last character in the string) in exactly 3 runs
+		self.run_history = dict()
+
+		# Total number of actions which led to a reward of 1 and total 
+		# number of actions
+		self.total_successful_actions = 0
+		self.total_actions = 0
+
 		def positiveReward(sx):
 			# assignments = _getAssignmentFromString(sx)
 			# return assignments[-1] == 1
-			return sx[-1] == "1"
+			v = (sx[-1] == "1")
+			# print(v)
+			return v
 			
 		ans = []
 		for t in tqdm(range(horizon)):
